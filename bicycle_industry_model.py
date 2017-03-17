@@ -30,6 +30,7 @@
 # After each customer has purchased their bike, the script should print out
 # the bicycle shop's remaining inventory for each bike, and how much profit they have made selling the three bikes.
 
+
 class Bicycle(object):
     def __init__(self, id, model_name, weight, production_cost):
         self.id = id
@@ -58,29 +59,36 @@ bicycle_5 = Bicycle(5, 'Hero', 10, 520)
 bicycle_6 = Bicycle(6, 'Pacific', 12, 750)
 
 bikes_lst = [bicycle_1, bicycle_2, bicycle_3, bicycle_4, bicycle_5, bicycle_6]
-bike_id_lst = [1, 2, 3, 4, 5, 6]
 
-bicycle_dict = {}
-for key, value in zip(bike_id_lst, bikes_lst):
-    bicycle_dict[key] = value
 
-class Bike_shop(object):
+class BikeShop(object):
     def __init__(self, shop_name, bicycle_dict):
         self.shop_name = shop_name
         self.bicycle_dict = bicycle_dict
 
     def sell(self, bike_id_num):
-        cost_price = bicycle_dict[bike_id_num].production_cost
+        cost_price = self.bicycle_dict[bike_id_num].production_cost
         profit = 0.20 * cost_price
         selling_price = cost_price + profit
+
+        # remove the purchased bike from inventory
+        self.bicycle_dict.pop(bike_id_num)
+
         return selling_price
 
-bike_shop = Bike_shop('Bicycle_vendors', bicycle_dict)
+    def get_affordable_bikes(self, customer):
+        return [bike for bike in self.bicycle_dict.values() if customer.can_afford(bike)]
+
+bike_shop = BikeShop('Bicycle_vendors', {bike.get_id(): bike for bike in bikes_lst})
+
 
 class Customer(object):
     def __init__(self, name, fund):
         self.name = name
         self.fund = fund
+
+    def get_available_funds(self):
+        return self.fund
 
     def buy(self, expenditure):
         self.fund = self.fund - expenditure
@@ -95,39 +103,30 @@ customer_3 = Customer('Shrey', 1000)
 
 customer_lst = [customer_1, customer_2, customer_3]
 
+
 def main():
     """
     Print the name of each customer, and a list of the bikes offered by the bike shop
     that they can afford given their budget.
     """
     import random
-    purchase_bike_id = [] # Randomly choses one bicycle that a customer decides to purchase
-    for i in customer_lst:
-        affordable_bikes = [] # Each customer can afford bicycles contained in this list
-        for j in bikes_lst:
-            if i.can_afford(j): # Fund >= Bike's cost
-                affordable_bikes.append(j.id)
 
-        print ('Customer {} can afford {} bicycle'.format(i.name, affordable_bikes))
-        purchase_bike_id.append(random.choice(affordable_bikes))
+    for customer in customer_lst:
+        affordable_bikes = bike_shop.get_affordable_bikes(customer)
+        bike_for_purchase = random.choice(affordable_bikes)
+        selling_price = bike_shop.sell(bike_for_purchase.get_id())
+        customer.buy(selling_price)
 
-    print bike_shop.bicycle_dict # Print the initial inventory of the bike shop for each bike it carries.
-    print purchase_bike_id # Bicycle id that 3 customers want to purchase
-
-    # Have each of the three customers purchase a bike
-    # then print the name of the bike the customer purchased, the cost, and
-    # how much money they have left over in their bicycle fund.
-
-    for i in range(3):
         print ("{} has purchased {} bike costing him {} "
                "and the now he/she has {} money left in the bicycle fund"
-               . format(customer_lst[i], # ith customer
-                        bicycle_dict[purchase_bike_id[i]].model_name, # Model Name of purchased bicycle
-                        bike_shop.sell(purchase_bike_id[i]), # Selling price of the bicycle
-                        customer_lst[i].buy(bike_shop.sell(purchase_bike_id[i])) # Balance = Fund - Selling price
-        ))
+               .format(customer,  # ith customer
+                       bike_for_purchase.model_name,  # Model Name of purchased bicycle
+                       selling_price,  # Selling price of the bicycle
+                       customer.get_available_funds()  # Balance = Fund - Selling price
+                       ))
 
 main()
+
 
 
 
